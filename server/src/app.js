@@ -1,0 +1,13 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
+import api from './routes/api.js';
+import { config } from './config.js';
+export const app=express();
+app.use(helmet());app.use(cors({origin:config.origin}));app.use(express.json());app.use(morgan('dev'));
+app.use('/api',rateLimit({windowMs:60000,limit:120,standardHeaders:'draft-7',legacyHeaders:false}));
+app.get('/api/health',(_req,res)=>res.json({ok:true,mode:config.mode,time:new Date().toISOString()}));
+app.use('/api',api);
+app.use((err,_req,res,_next)=>{if(err.name==='ZodError')return res.status(400).json({error:'Invalid query',details:err.issues});console.error(err);res.status(500).json({error:'Internal server error'});});
